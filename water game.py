@@ -3,128 +3,114 @@ import streamlit.components.v1 as components
 import random
 
 # පිටුවේ සැකසුම්
-st.set_page_config(page_title="වතුර භාග ගේම් එක", layout="centered")
+st.set_page_config(page_title="වතුර භාග ගේම් එක", layout="wide")
 
-# UI එක සහ අකුරු ඉතා ලොකුවට සැකසීම (Custom CSS)
+# UI එක ලස්සන කිරීම (බොත්තම් එක පේළියට සහ අකුරු ලොකුවට)
 st.markdown("""
     <style>
-    /* බොත්තම් වල අකුරු සහ ප්‍රමාණය */
     .stButton>button {
         width: 100%;
-        height: 100px;
-        font-size: 35px !important; /* අකුරු ඉතා ලොකු කර ඇත */
+        height: 90px;
+        font-size: 30px !important;
         font-weight: bold;
-        border-radius: 20px;
+        border-radius: 15px;
         background-color: #ffffff;
         border: 3px solid #0288d1;
         color: #0288d1;
-        transition: 0.3s;
     }
-    .stButton>button:hover {
-        background-color: #0288d1;
-        color: white;
-    }
-    /* මාතෘකා */
-    h1 { font-size: 55px !important; text-align: center; color: #01579b; }
-    h3 { font-size: 35px !important; text-align: center; }
-    /* ලකුණු පුවරුව */
+    h1 { font-size: 50px !important; text-align: center; color: #01579b; }
     .score-text { 
-        font-size: 32px; 
+        font-size: 30px; 
         font-weight: bold; 
         text-align: center; 
         color: #1b5e20; 
         background-color: #e8f5e9;
         padding: 10px;
         border-radius: 10px;
+        margin-bottom: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("🥤 වතුර භාග ගේම් එක")
 
-# දත්ත මතක තබා ගැනීමට Session State භාවිතා කිරීම
+# Session State මගින් දත්ත සහ වත්මන් ප්‍රශ්නය ගබඩා කිරීම
 if 'score' not in st.session_state: st.session_state.score = 0
 if 'q_count' not in st.session_state: st.session_state.q_count = 1
 if 'finished' not in st.session_state: st.session_state.finished = False
 
-# ශබ්ද ක්‍රියාත්මක කරන function එක
-def play_sound(url):
-    components.html(f"""
-        <audio autoplay>
-            <source src="{url}" type="audio/mpeg">
-        </audio>
-    """, height=0)
-
-# ප්‍රශ්න පෙන්වන ප්‍රධාන කොටස
-if not st.session_state.finished:
-    # භාජන හැඩයන් (අහඹු ලෙස වෙනස් වේ)
-    shapes = [
-        "border-radius: 0 0 15px 15px; width: 140px;", 
-        "border-radius: 0 0 80px 80px; width: 180px;", 
-        "border-radius: 40px 40px 80px 80px; width: 150px;", 
-        "border-radius: 0 0 130px 130px; width: 170px; height: 120px;"
-    ]
-    # වතුර මට්ටම්
+# ප්‍රශ්නයක් මුලින්ම පෙන්වන විට හෝ අලුත් ප්‍රශ්නයකට යන විට අගයන් තෝරා ගැනීම
+if 'current_level' not in st.session_state:
     levels = [
         {"text": "1/4", "value": 25},
         {"text": "1/2", "value": 50},
         {"text": "3/4", "value": 75},
         {"text": "Full", "value": 100}
     ]
+    shapes = [
+        "border-radius: 0 0 15px 15px; width: 140px;", 
+        "border-radius: 0 0 80px 80px; width: 180px;", 
+        "border-radius: 40px 40px 80px 80px; width: 150px;", 
+        "border-radius: 0 0 130px 130px; width: 170px;"
+    ]
+    st.session_state.current_level = random.choice(levels)
+    st.session_state.current_shape = random.choice(shapes)
 
-    # අහඹු ලෙස එකක් තෝරා ගැනීම
-    selected_shape = random.choice(shapes)
-    selected_level = random.choice(levels)
+def play_sound(url):
+    components.html(f"""<audio autoplay><source src="{url}" type="audio/mpeg"></audio>""", height=0)
 
-    # භාජනයේ රූපය (HTML/CSS)
+def next_question():
+    # අගයන් අලුත් කිරීම
+    levels = [{"text": "1/4", "value": 25}, {"text": "1/2", "value": 50}, {"text": "3/4", "value": 75}, {"text": "Full", "value": 100}]
+    shapes = ["border-radius: 0 0 15px 15px; width: 140px;", "border-radius: 0 0 80px 80px; width: 180px;", "border-radius: 40px 40px 80px 80px; width: 150px;", "border-radius: 0 0 130px 130px; width: 170px;"]
+    st.session_state.current_level = random.choice(levels)
+    st.session_state.current_shape = random.choice(shapes)
+    st.session_state.q_count += 1
+    if st.session_state.q_count > 50:
+        st.session_state.finished = True
+    st.rerun()
+
+if not st.session_state.finished:
+    # භාජනය පෙන්වීම
     game_html = f"""
-    <div style="display: flex; flex-direction: column; align-items: center; background: white; padding: 40px; border-radius: 35px; border: 5px solid #bbdefb;">
-        <div style="height: 250px; display: flex; align-items: flex-end; margin-bottom: 10px;">
-            <div style="{selected_shape} height: 230px; border: 7px solid #263238; position: relative; overflow: hidden; background: rgba(230,243,255,0.4);">
-                <div style="position: absolute; bottom: 0; width: 100%; height: {selected_level['value']}%; background: linear-gradient(to top, #0288d1, #4fc3f7); transition: 0.8s ease-out;"></div>
+    <div style="display: flex; justify-content: center; background: white; padding: 30px; border-radius: 30px; border: 5px solid #bbdefb; margin-bottom: 20px;">
+        <div style="height: 250px; display: flex; align-items: flex-end;">
+            <div style="{st.session_state.current_shape} height: 230px; border: 7px solid #263238; position: relative; overflow: hidden; background: #f1f8ff;">
+                <div style="position: absolute; bottom: 0; width: 100%; height: {st.session_state.current_level['value']}%; background: linear-gradient(to top, #0288d1, #4fc3f7); transition: 0.5s;"></div>
             </div>
         </div>
     </div>
     """
-    components.html(game_html, height=380)
+    components.html(game_html, height=350)
 
-    st.markdown(f"### ප්‍රශ්නය: {st.session_state.q_count} / 50")
-    st.markdown(f"<p class='score-text'>ලකුණු: {st.session_state.score}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p class='score-text'>ප්‍රශ්නය: {st.session_state.q_count} / 50 | ලකුණු: {st.session_state.score}</p>", unsafe_allow_html=True)
 
-    # පිළිතුරු පරීක්ෂා කරන function එක
-    def check_ans(ans_text, correct_text):
-        if ans_text == correct_text:
-            st.session_state.score += 1
-            play_sound("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3")
-            st.toast("නිවැරදියි! ✅")
-        else:
-            play_sound("https://www.soundjay.com/buttons/sounds/button-10.mp3")
-            st.error(f"වැරදියි! නිවැරදි පිළිතුර: {correct_text}")
-        
-        st.session_state.q_count += 1
-        if st.session_state.q_count > 50:
-            st.session_state.finished = True
-        st.rerun()
+    # බොත්තම් 4 එකම පේළියකට (Columns 4)
+    cols = st.columns(4)
+    btn_labels = ["1/4", "1/2", "3/4", "Full"]
 
-    # බොත්තම් (Buttons)
-    col1, col2 = st.columns(2)
-    col3, col4 = st.columns(2)
-    
-    with col1:
-        if st.button("1/4"): check_ans("1/4", selected_level['text'])
-    with col2:
-        if st.button("1/2"): check_ans("1/2", selected_level['text'])
-    with col3:
-        if st.button("3/4"): check_ans("3/4", selected_level['text'])
-    with col4:
-        if st.button("Full"): check_ans("Full", selected_level['text'])
+    for i, label in enumerate(btn_labels):
+        with cols[i]:
+            if st.button(label):
+                if label == st.session_state.current_level['text']:
+                    st.session_state.score += 1
+                    play_sound("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3")
+                    st.toast("නිවැරදියි! ✅")
+                else:
+                    play_sound("https://www.soundjay.com/buttons/sounds/button-10.mp3")
+                    st.error(f"වැරදියි! පිළිතුර: {st.session_state.current_level['text']}")
+                
+                # පිළිතුර දුන් පසු තත්පරයකින් ඊළඟ ප්‍රශ්නයට
+                import time
+                time.sleep(0.5)
+                next_question()
 
 else:
-    # ගේම් එක අවසානයේ පෙන්වන තිරය
     st.balloons()
     st.markdown("<h1>ක්‍රීඩාව අවසන්! 🏆</h1>", unsafe_allow_html=True)
-    st.markdown(f"<p class='score-text' style='font-size:40px;'>මුළු ලකුණු: {st.session_state.score} / 50</p>", unsafe_allow_html=True)
+    st.markdown(f"<p class='score-text'>මුළු ලකුණු: {st.session_state.score} / 50</p>", unsafe_allow_html=True)
     if st.button("නැවත අරඹන්න"):
+        del st.session_state.current_level
         st.session_state.score = 0
         st.session_state.q_count = 1
         st.session_state.finished = False
